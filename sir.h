@@ -13,10 +13,13 @@
 
 #define NAVG 100000 // number of runs for averages
 
-#define I_OR_R (UINT_MAX - 1)
+//#define I_OR_R (UINT_MAX - 1)
 #define NONE UINT_MAX
 
 #define S(x) (n[(x)].time > now)
+
+#define TRUE 1
+#define FALSE 0
 
 // auxiliary macro
 #define SQ(x) ((x) * (x))
@@ -27,7 +30,9 @@ typedef struct GLOBALS {
 	// NETWORK SPECS
 	unsigned int n;
 	// OTHER GLOBALS
-	unsigned int nheap, *heap;
+        unsigned int nheap;
+        struct NODE **heap;
+        struct NODE *nodes;
 	// OUTBREAK STATS
 	unsigned int s;
 	float t;
@@ -37,9 +42,12 @@ typedef struct GLOBALS {
 } GLOBALS;
 
 typedef struct NODE {
-	unsigned int deg, *nb; // degree and network neighbors
-	unsigned int heap;
-	float time;
+    unsigned int I_OR_R;
+    unsigned int is_heaped;
+    unsigned int heap;
+    unsigned int deg; // degree
+    struct NODE **nb;  // network neighbors
+    float time;
 } NODE;
 
 // heap.c

@@ -4,7 +4,6 @@
 
 #include "sir.h"
 
-extern NODE *n;
 extern GLOBALS g;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -25,28 +24,30 @@ void read_data (FILE *fp) {
 
 	g.n++;
 
-	n = calloc(g.n, sizeof(NODE));
+	// allocate heap and list of nodes
+	g.heap = malloc(g.n * sizeof(NODE*));
+	g.nodes = malloc(g.n * sizeof(NODE));
 
 	rewind(fp);
 
 	// scan the degrees
 	while (2 == fscanf(fp, "%u %u\n", &me, &you)) {
-		n[me].deg++;
-		n[you].deg++;
+                g.nodes[me].deg++;
+		g.nodes[you].deg++;
 	}
 
 	// allocate adjacency lists
 	for (i = 0; i < g.n; i++) {
-		n[i].nb = malloc(n[i].deg * sizeof(unsigned int));
-		n[i].deg = 0;
+	        g.nodes[i].nb = malloc(g.nodes[i].deg * sizeof(NODE*));
+	        g.nodes[i].deg = 0;
 	}
 
 	rewind(fp);
 
 	// fill adjacency lists
 	while (2 == fscanf(fp, "%u %u\n", &me, &you)) {
-		n[me].nb[n[me].deg++] = you;
-		n[you].nb[n[you].deg++] = me;
+   	        g.nodes[me].nb[g.nodes[me].deg++] = &g.nodes[you];
+	        g.nodes[you].nb[g.nodes[you].deg++] = &g.nodes[me];
 	}
 }
 

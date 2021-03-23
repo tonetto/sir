@@ -4,35 +4,35 @@
 #include "sir.h"
 
 GLOBALS g;
-NODE *n;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // this routine does the bookkeeping for an infection event
 
 void infect () {
-	unsigned int i, you, me = g.heap[1];
-	float t, now = n[me].time;
+        unsigned int i;
+	NODE *you, *me = g.heap[1];
+	float t, now = me->time;
 
 	del_root();
-	n[me].heap = I_OR_R;
+	me->I_OR_R = TRUE;
 	// get the recovery time
-	n[me].time += g.rexp[pcg_16()] * g.beta; // bcoz g.rexpr has a / g.beta factor
-	if (n[me].time > g.t) g.t = n[me].time;
+	me->time += g.rexp[pcg_16()] * g.beta; // bcoz g.rexpr has a / g.beta factor
+	if (me->time > g.t) g.t = me->time;
 	g.s++;
 
-	// go through the neighbors of the infected node . .
-	for (i = 0; i < n[me].deg; i++) {
-		you = n[me].nb[i];
-		if (n[you].heap != I_OR_R) { // if you is S, you can be infected
+	// go through the neighbors of the infected node
+	for (i = 0; i < me->deg; i++) {
+		you = me->nb[i];
+		if (you->I_OR_R == FALSE) { // if `you` is S, `you` can be infected
 			t = now + g.rexp[pcg_16()]; // get the infection time
-
-			if ((t < n[me].time) && (t < n[you].time)) {
-				n[you].time = t;
-				if (n[you].heap == NONE) { // if not listed before, then extend the heap
-					g.heap[++g.nheap] = you;
-					n[you].heap = g.nheap;
+			if ((t < me->time) && (t < you->time)) {
+				you->time = t;
+				if (you->is_heaped == FALSE) {
+				    g.heap[++g.nheap] = you;
+				    you->is_heaped = TRUE;
+				    you->heap = g.nheap;
 				}
-				up_heap(n[you].heap); // this works bcoz the only heap relationship that can be violated is the one between you and its parent
+				up_heap(you->heap); // this works bcoz the only heap relationship that can be violated is the one between `you` and its parent
 			}
 		}
 	}
@@ -46,21 +46,23 @@ void sir () {
 	
 	g.t = 0.0;
 	g.s = 0;
-	
+
 	// initialize
 	for (i = 0; i < g.n; i++) {
-		n[i].heap = NONE;
-		n[i].time = DBL_MAX; // to a large value
+	        g.nodes[i].is_heaped = FALSE;  // if a node is already in the heap
+     	        g.nodes[i].time = DBL_MAX;  // to a large value
+		g.nodes[i].I_OR_R = FALSE;  // not I_OR_R
+		g.nodes[i].heap = 0;        // will keep the location of a node in the heap
 	}
 
 	// get & infect the source
 	source = pcg_32_bounded(g.n);
-	n[source].time = 0.0;
-	n[source].heap = 1;
-	g.heap[g.nheap = 1] = source;
+	g.nodes[source].time = 0.0;
+	g.nodes[source].heap = 1;
+	g.heap[g.nheap = 1] = &g.nodes[source];
 
 	// run the outbreak
-	while (g.nheap) infect();
+	while (g.nheap > 0) infect();
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -90,9 +92,6 @@ int main (int argc, char *argv[]) {
 	read_data(fp);
 	fclose(fp);
 
-	// allocating the heap (N + 1) because it's indices are 1,...,N
-	g.heap = malloc((g.n + 1) * sizeof(unsigned int));
-
 	for (i = 0; i < 0x10000; i++)
 		g.rexp[i] = -log((i + 1.0) / 0x10000) / g.beta;
 
@@ -117,8 +116,9 @@ int main (int argc, char *argv[]) {
 	printf("avg. time to extinction: %g (%g)\n", st1, sqrt((st2 - SQ(st1)) / (NAVG - 1)));
 
 	// cleaning up
-	for (i = 0; i < g.n; i++) free(n[i].nb);
-	free(n); free(g.heap);
+	for (i = 0; i < g.n; i++) free(g.nodes[i].nb);
+	free(g.nodes);
+	free(g.heap);
 	 
 	return 0;
 }

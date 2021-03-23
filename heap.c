@@ -6,7 +6,6 @@
 
 #include "sir.h"
 
-extern NODE *n;
 extern GLOBALS g;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -15,27 +14,28 @@ extern GLOBALS g;
 // and its children (and no other inconsistencies)
 
 void down_heap (unsigned int here) {
-	unsigned int utmp, smallest = here;
+        NODE *ntmp;
+	unsigned int smallest = here;
 	unsigned int left = here << 1; // = here * 2 (I know this is silly and saves no time)
 	unsigned int right = left | 1; // = left + 1
 
 	while (left <= g.nheap) {
 	  smallest = left;
-	  if ((right <= g.nheap) && (n[g.heap[right]].time < n[g.heap[smallest]].time)) {
+	  if ((right <= g.nheap) && (g.heap[right]->time < g.heap[smallest]->time)) {
 	    smallest = right;
 	  }
 
-	  if (n[g.heap[smallest]].time <= n[g.heap[here]].time) return;
+	  if (g.heap[smallest]->time <= g.heap[here]->time) return;
 
 	  // swap smallest and here
-	  utmp = g.heap[smallest];
+	  ntmp = g.heap[smallest];
 	  g.heap[smallest] = g.heap[here];
-	  g.heap[here] = utmp;
+	  g.heap[here] = ntmp;
 
-	  n[g.heap[smallest]].heap = smallest;
-	  n[g.heap[here]].heap = here;
+	  g.heap[here]->heap = here;
+	  g.heap[smallest]->heap = smallest;
 
-	  // reset initial variables for next iteration
+	  // reset variables for next iteration
 	  here = smallest;
 	  left = here << 1;
 	  right = left | 1;
@@ -46,10 +46,9 @@ void down_heap (unsigned int here) {
 // deleting the root of the heap
 
 void del_root () {
-
-	g.heap[1] = g.heap[g.nheap--];
-	n[g.heap[1]].heap = 1;
-	down_heap(1);
+    g.heap[1] = g.heap[g.nheap--];
+    g.heap[1]->heap = 1;
+    down_heap(1);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -57,19 +56,22 @@ void del_root () {
 // for adding an element to the heap
 
 void up_heap (unsigned int start) {
-	unsigned int above, here = start, mem = g.heap[start];
+        unsigned int above, here = start;
+	NODE *mem = g.heap[start];
+	//NODE *ntmp;
 
 	while (here > 1) {
 		above = here >> 1; // = here / 2
-		
-		if (n[mem].time >= n[g.heap[above]].time) break;
+
+		if (mem->time >= g.heap[above]->time) break;
 		g.heap[here] = g.heap[above];
-		n[g.heap[here]].heap = here;
-		
+		g.heap[here]->heap = here;
+
 		here = above;
 	}
-	
-	n[g.heap[here] = mem].heap = here;
+
+	g.heap[here] = mem;
+	g.heap[here]->heap = here;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
